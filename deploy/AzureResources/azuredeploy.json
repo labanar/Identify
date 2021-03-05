@@ -1,0 +1,165 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2014-04-01-preview/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "envPrefix": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "envSuffix": {
+      "type": "string",
+      "minLength": 1,
+      "allowedValues": [
+        "dev",
+        "test",
+        "prod"
+      ]
+    },
+
+    "appServicePlanName": {
+      "type": "string",
+      "minLength": 3
+    },
+
+    //Azure SQL Server Config
+    "databaseServerName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "databaseServerAdminLogin": {
+      "type": "string",
+      "minLength": 3,
+      "defaultValue": "SQLAdmin"
+    },
+    "databaseServerAdminLoginPassword": {
+      "type": "securestring"
+    },
+
+    //Send Grid Config
+    "sendGridApiKey": {
+      "type": "securestring",
+      "minLength": 1
+    },
+    "sendGridWelcomeEmailTemplateId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sendGridPasswordEmailTemplateId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sendGridSenderAddress": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sendGridSenderName": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "variables": {
+    "location": "canadacentral",
+    "hyphenatedPrefix": "[if(equals(parameters('envPrefix') ,''), '', concat(parameters('envPrefix'), '-'))]",
+    "hyphenatedSuffix": "[if(equals(parameters('envSuffix') ,''), '', concat('-', parameters('envSuffix')))]",
+    "databaseName": "[concat(variables('hyphenatedPrefix'), 'identify', variables('hyphenatedSuffix'))]",
+    "appServiceName": "[concat(variables('hyphenatedPrefix'), 'identify', variables('hyphenatedSuffix'))]",
+    "resetLinkFormatString": "[concat(variables('hyphenatedPrefix'), 'identify', variables('hyphenatedSuffix'), '.azurewebsites.net/reset/{0}')]",
+    "activationLinkFormatString": "[concat(variables('hyphenatedPrefix'), 'identify', variables('hyphenatedSuffix'), '.azurewebsites.net/reset/{0}')]"
+  },
+  "resources": [
+
+    //Database
+    {
+      "name": "[concat(parameters('databaseServerName'),'/',variables('databaseName'))]",
+      "type": "Microsoft.Sql/servers/databases",
+      "location": "[variables('location')]",
+      "apiVersion": "2020-08-01-preview",
+      "sku": {
+        "name": "S0",
+        "tier": "Standard"
+      },
+      "properties": {
+        "collation": "SQL_Latin1_General_CP1_CI_AS",
+        "maxSizeBytes": 2147483648,
+        "sampleName": "",
+        "zoneRedundant": "false",
+        "licenseType": "",
+        "readScale": "Disabled",
+        "readReplicaCount": 0
+      }
+    },
+    //Database
+
+
+    //Identify App Service
+    {
+      "apiVersion": "2018-02-01",
+      "name": "[variables('appServiceName')]",
+      "type": "Microsoft.Web/sites",
+      "location": "[variables('location')]",
+      "dependsOn": [],
+      "tags": {},
+      "properties": {
+        "name": "[variables('appServiceName')]",
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', parameters('appServicePlanName'))]",
+        "webSocketsEnabled": true,
+        "siteConfig": {
+          "alwaysOn": true
+        },
+        "httpsOnly": true
+      },
+      "resources": [
+        {
+          "name": "appsettings",
+          "type": "config",
+          "apiVersion": "2018-02-01",
+          "dependsOn": [
+            "[resourceId('Microsoft.Web/Sites', variables('appServiceName'))]"
+          ],
+          "properties": {
+            //App Settings here
+            "SendGrid:ApiKey": "[parameters('sendGridApiKey')]",
+            "SendGrid:WelcomeEmailTemplateId": "[parameters('sendGridWelcomeEmailTemplateId')]",
+            "SendGrid:PasswordResetEmailTemplateId": "[parameters('sendGridPasswordEmailTemplateId')]",
+            "SendGrid:SenderAddress": "[parameters('sendGridSenderAddress')]",
+            "SendGrid:SenderName": "[parameters('sendGridSenderName')]",
+            "SendGrid:ResetLinkFormatString": "[variables('resetLinkFormatString')]",
+            "SendGrid:ActivationLinkFormatString": "[variables('activationLinkFormatString')]"
+          }
+        },
+        {
+          "apiVersion": "2018-02-01",
+          "type": "config",
+          "name": "logs",
+          "dependsOn": [
+            "[concat('Microsoft.Web/sites/', variables('appServiceName'))]",
+            "[resourceId('Microsoft.Web/sites/config/', variables('appServiceName'), 'appsettings')]"
+          ],
+          "properties": {
+            //Logging config here
+          }
+        },
+        {
+          "name": "connectionstrings",
+          "type": "config",
+          "apiVersion": "2018-02-01",
+          "dependsOn": [
+            "[resourceId('Microsoft.Web/Sites', variables('appServiceName'))]",
+            "[resourceId('Microsoft.Sql/servers/databases', parameters('databaseServerName'), variables('databaseName'))]"
+          ],
+          "properties": {
+            "IdentityDb": {
+              "value": "[concat('Data Source=tcp:', parameters('databaseServerName'), '.database.windows.net', ',1433;Initial Catalog=', variables('databaseName'), ';User Id=', parameters('databaseServerAdminLogin'), '@', parameters('databaseServerName'), ';Password=', parameters('databaseServerAdminLoginPassword'), ';')]",
+              "type": "SQLAzure"
+            }
+          }
+        }
+      ]
+    }
+    //Identify App Service
+
+
+
+  ],
+  "outputs": {}
+}
