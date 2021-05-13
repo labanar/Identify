@@ -1,8 +1,6 @@
 ﻿using Identify.Application.Commands.Users;
 using Identify.Application.Queries;
-using IdentityServer4;
 using MediatR;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Linq;
 using System.Threading.Tasks;
@@ -21,7 +19,6 @@ namespace Identify.Web.Controllers
         public async Task<IActionResult> Login([FromBody] UserAuthenticateCommand request)
         {
             var result = await _mediator.Send(request);
-            await Request.HttpContext.SignInAsync(new IdentityServerUser(result.UserId) { DisplayName = result.Username });
             return new JsonResult(result);
         }
 

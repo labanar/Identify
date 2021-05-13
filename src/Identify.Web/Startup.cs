@@ -37,7 +37,7 @@ namespace Identify.Web
             services.AddTransient<IHashingServiceFactory, HashingServiceFactory>();
             services.AddDbContext<IdentityDbContext>(options => options.UseSqlServer(Configuration["ConnectionStrings:IdentityDb"]));
             services.AddScoped<IIdentityDbContext>(serviceProvider => serviceProvider.GetRequiredService<IdentityDbContext>());
-
+            services.Configure<IdentityServerOptions>(Configuration.GetSection("IdentityServerOptions"));
             services.Configure<SendGridOptions>(Configuration.GetSection("SendGrid"));
             services.AddTransient<IEmailService, SendGridEmailService>();
             services.AddCors();

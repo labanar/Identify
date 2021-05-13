@@ -2,6 +2,8 @@ import {
   Box,
   Button,
   CircularProgress,
+  Checkbox,
+  FormControlLabel,
   makeStyles,
   Typography,
 } from "@material-ui/core";
@@ -36,11 +38,19 @@ const useStyles = makeStyles((theme) => ({
   loginSpinner: {
     color: grey[300],
   },
+  rememberMeLabel: {
+    color: grey[300],
+  },
+  rememberMeCheckbox: {
+    color: grey[400],
+  }
 }));
 
 export default function LoginForm({ onSubmit, isSubmitting }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(true);
+
   const classes = useStyles();
   const history = useHistory();
 
@@ -66,8 +76,22 @@ export default function LoginForm({ onSubmit, isSubmitting }) {
           className={classes.textField}
           value={password}
           setValue={setPassword}
-          password
-        />
+          password />
+        <Typography variant={"subtitle1"}>
+            <FormControlLabel
+                className={classes.rememberMeLabel}
+                control={
+                    <Checkbox
+                        className={classes.rememberMeCheckbox}
+                        checked={rememberMe}
+                        onChange={e => setRememberMe(e.target.checked)}
+                        name="rememberMe"
+                        color="primary"
+                    />
+                }
+                label="Remember Me"
+            />
+        </Typography>
         <div className={classes.resetLink}>
           <Typography variant={"caption"}>{"Forgot your password?"}</Typography>
           <span

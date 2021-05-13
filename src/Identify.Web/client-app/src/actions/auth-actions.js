@@ -16,7 +16,7 @@ export const loginFailure = () => ({
   type: LOGIN_ERROR,
 });
 
-export function login(username, password, returnUrl) {
+export function login(username, password, returnUrl, rememberMe) {
   return (dispatch) => {
     dispatch(loginBegin());
 
@@ -24,6 +24,7 @@ export function login(username, password, returnUrl) {
       username,
       password,
       returnUrl,
+      rememberMe
     };
 
     fetch(`${BASE_URL}/api/authenticate`, {
